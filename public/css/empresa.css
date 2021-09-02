@@ -1,0 +1,10 @@
+.full-page:after {
+    background-color: #f4f3ef;
+}
+
+.navbar.navbar-transparent {
+    background-color: #fff !important; 
+}
+.nav-item a {
+    text-decoration: none;
+}
