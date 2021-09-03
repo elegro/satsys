@@ -13,13 +13,54 @@ class Login extends CI_Controller {
 
 	public function autenticacion()
 	{
-		$data = $this->input->get_params();
-		$token = $this->jwt->create(array(
-			"usuario"=> $this->input->param("usuario"),
-			"moment"=> date('Y-m-d H:i:s')
-		));
-		$data['token']= $token;
-		$this->toJson($data);
+		if($_SERVER['REQUEST_METHOD'] != "POST" || IS_AJAX)
+		{
+			$erro = true;
+			$msj = "El ingreso no es correcto...";
+			do{
+				echo $msj;
+				echo "------ERROR ACCESO NO PERMITIDO-----";
+				$msj = "";
+			}while($erro == true);
+		}else{
+			try {
+				$this->input->get_params();
+				$usurio =  $this->input->param("usuario");
+				$clave = $this->input->param("clave");
+				$this->form_validation->set_rules("usuario","nombre de usuario","required");
+				$this->form_validation->set_rules("clave","clave de acceso","required");
+				
+				if ($this->form_validation->run() == FALSE)
+				{
+					$msj = "Todos los campos son requeridos por el sistema para iniciar sesion con exito.\n".
+					form_error('usuario', '<p class="text-danger">', '</p>')."\n".
+					form_error('clave', '<p class="text-danger">', '</p>');
+					throw new Exception($msj, 1);
+				} else {
+					$password = $this->auth_model->encrypt_password(
+						trim($this->input->post("usuario")), 
+						trim($this->input->post("clave")), 
+						'PHP5.3MD5'
+					);
+					$rqs = $this->auth_model->validar_usuario($password, $this->input->post("usuario"));
+					if(!$rqs){
+						throw new Exception("Las credenciales de acceso no son correctas para el ingreso.", 1);
+					}
+					
+					$token = $this->jwt->create(array(
+						"usuario"=> $this->input->param("usuario"),
+						"moment"=> date('Y-m-d H:i:s')
+					));
+					$this->toJson(array("token"=> $token));
+				}
+			} catch (\Exception $err) {
+				$this->session->flashdata('auth', array(
+					"success"=> false, 
+					"msj"=> $err->getMessage()
+				));
+				redirect("autenticar_error", "location");
+			}
+		}
 	}
 
 	public function validate_token()
@@ -37,7 +78,6 @@ class Login extends CI_Controller {
 	{
 		$data =  $this->session->flashdata('auth');
 		$this->toJson($data);
-		// echo "{\"status\":\"301\", \"responseText\":\"Error Validaciòn Token\"}";
 	}
 
 

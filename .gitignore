@@ -48,3 +48,4 @@ public/img/
 public/gulpfile.babel.js
 public/package-lock.json
 public/package.json
+application/config/database.php
